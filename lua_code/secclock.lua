@@ -1,13 +1,14 @@
 n=require("ntp")
 
-local PIN1 = 3
-local PIN2 = 4
+local DIRA = 3
+local PWMA = 1
 local impulse = 300 -- in ms
-local delay = 10 -- in ms
+local delay = 30 -- in ms
 
 local tmr_alarm, tmr_unregister, tmr_ALARM_SINGLE, tmr_ALARM_AUTO, tmr_create, tmr_now = tmr.alarm, tmr.unregister, tmr.ALARM_SINGLE, tmr.ALARM_AUTO, tmr.create, tmr.now
 local string_find, string_gmatch, string_format, string_sub, string_gsub = string.find, string.gmatch, string.format, string.sub, string.gsub
-local gpio_mode, gpio_serout, gpio_write, gpio_HIGH, gpio_LOW, gpio_OUTPUT = gpio.mode, gpio.serout, gpio.write, gpio.HIGH, gpio.LOW, gpio.OUTPUT
+local gpio_mode, gpio_serout, gpio_write, gpio_HIGH, gpio_LOW, gpio_OUTPUT, gpio_INT, gpio_PULLUP = gpio.mode, gpio.serout, gpio.write, gpio.HIGH, gpio.LOW, gpio.OUTPUT, gpio.INT, gpio.PULLUP
+local pwm_setup, pwm_setduty, pwm_start, pwm_stop = pwm.setup, pwm.setduty, pwm.start, pwm.stop
 
 --display == (19*60+15) * 60
 
@@ -16,10 +17,15 @@ local tmr_sync = tmr_create()
 local tmr_adjust = tmr_create()
 local tmr_zero = tmr_create()
 
-gpio_mode(PIN1, gpio_OUTPUT)
-gpio_mode(PIN2, gpio_OUTPUT)
-gpio_write(PIN1, gpio_LOW)
-gpio_write(PIN2, gpio_LOW)
+-- based on: https://www.instructables.com/id/Motorize-IoT-With-ESP8266/
+gpio_mode(DIRA, gpio_OUTPUT)
+gpio_write(DIRA, gpio_LOW)
+gpio_write(PWMA, gpio_OUTPUT)
+gpio_write(PWMA, gpio_LOW)
+-- gpio_mode(PWMA, gpio_INT, gpio_PULLUP)
+pwm_setup(PWMA, 1000, 1023)
+pwm_setduty(PWMA, 0)
+pwm_start(PWMA)
 
 local function display_s()
   local minute = display / 60
@@ -35,13 +41,18 @@ function step()
   dif = ( (dif < 0) and ((dif + 0x7FFFFFFE) + 1) or dif) /1000 -- workaround for #1691
   if dif < (impulse + delay) then return end
 
-  local pin = state and PIN1 or PIN2
+  -- local pin = state and PIN1 or PIN2
   state = not state
+  direction = state and gpio_HIGH or gpio_LOW
   display = (display + 60) % 86400
-  print(string_format("display shows %s, signal on GPIO%d (free mem: %d)", display_s(), pin, node.heap()))
+  print(string_format("display shows %s, signal direction %d (free mem: %d)", display_s(), direction, node.heap()))
   --gpio_serout(pin, gpio_HIGH, {impulse*1000, delay*1000}, 1, 1)
-  gpio_write(pin, gpio_HIGH)
-  tmr_alarm(tmr_zero, impulse, tmr_ALARM_SINGLE, function() return gpio_write(pin, gpio_LOW) end)
+  -- gpio_write(pin, gpio_HIGH)
+  gpio_write(DIRA, direction)
+  -- gpio_write(PWMA, gpio_HIGH)
+  pwm_setduty(PWMA, 1023)
+  -- tmr_alarm(tmr_zero, impulse, tmr_ALARM_SINGLE, function() return gpio_write(PWMA, gpio_LOW) end)
+  tmr_alarm(tmr_zero, impulse, tmr_ALARM_SINGLE, function() return pwm_setduty(PWMA, 0) end)
   last_step = now
 end
 

@@ -30,5 +30,5 @@ telnet_srv:listen(23, function(socket)
     end)
     socket:on("sent", sender)
 
-    print("Welcome to NodeMcu world.")
+    print("Welcome to NodeMcu world :>")
 end)

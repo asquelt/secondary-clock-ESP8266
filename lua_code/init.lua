@@ -3,17 +3,22 @@ local smph = "semaphore.tmp"
 
 local tmr_create, tmr_alarm, tmr_ALARM_SINGLE = tmr.create, tmr.alarm, tmr.ALARM_SINGLE
 
+-- 0/3 = direction, digital
+-- 5/1 = PWM, analog (0-1023)
 gpio.mode(3, gpio.OUTPUT);
 gpio.write(3, gpio.LOW);
-gpio.mode(4, gpio.OUTPUT);
-gpio.write(4, gpio.LOW);
+gpio.mode(1, gpio.OUTPUT);
+gpio.write(1, gpio.LOW);
+-- gpio.mode(1, gpio.INT, gpio.PULLUP);
 
 local function con(t)
-  local cred = {your_default_wifi="password"}
+  local cred = {x="y"}
+  local my_ssid = "kubryk"
+  local my_pass = "kubryk"
   for ssid, _ in pairs(t) do
-    if cred[ssid] then
+    if ssid == my_ssid then
       print("SSID: "..ssid)
-      wifi.sta.config({ssid=ssid, pwd=cred[ssid]})
+      wifi.sta.config({ssid=my_ssid, pwd=my_pass})
       wifi.sta.connect()
       return
     end

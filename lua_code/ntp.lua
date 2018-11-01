@@ -7,7 +7,7 @@ return({
     tz=3600,
     
     syncdns=function(self, cb, fail)
-        sntp_sync({"0.cz.pool.ntp.org", "1.cz.pool.ntp.org", "2.cz.pool.ntp.org"},
+        sntp_sync({"0.pl.pool.ntp.org", "1.pl.pool.ntp.org", "2.pl.pool.ntp.org"},
             function (ts)
                 self.tz = 3600 -- CET
                 if self:dst(ts) then
