@@ -57,11 +57,12 @@ function step()
 end
 
 function adjust()
-  local now = n:time() % 86400
+  local nowdate = n:time()
+  local now = nowdate % 86400
   local dif = (now - display) / 60 -- difference in minutes
   if dif < -10 then dif = dif + 1440 end
 
-  print(string_format("display shows %s, time is %s, %d minutes difference (free mem: %d)", display_s(), n:format(now), dif, node.heap()))
+  print(string_format("display shows %s, time is %s, %d minutes difference (free mem: %d)", display_s(), n:format(nowdate), dif, node.heap()))
   if dif > 0 then
     step()
     dif = dif - 1
