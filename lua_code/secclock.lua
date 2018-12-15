@@ -1,9 +1,6 @@
 n=require("ntp")
 
-local DIRA = 3
-local PWMA = 1
-local impulse = 300 -- in ms
-local delay = 30 -- in ms
+dofile("config.lua")
 
 local tmr_alarm, tmr_unregister, tmr_ALARM_SINGLE, tmr_ALARM_AUTO, tmr_create, tmr_now = tmr.alarm, tmr.unregister, tmr.ALARM_SINGLE, tmr.ALARM_AUTO, tmr.create, tmr.now
 local string_find, string_gmatch, string_format, string_sub, string_gsub = string.find, string.gmatch, string.format, string.sub, string.gsub
@@ -20,6 +17,8 @@ local tmr_zero = tmr_create()
 -- based on: https://www.instructables.com/id/Motorize-IoT-With-ESP8266/
 gpio_mode(DIRA, gpio_OUTPUT)
 gpio_write(DIRA, gpio_LOW)
+gpio_mode(LEDZ, gpio_OUTPUT)
+gpio_write(LEDZ, gpio_LOW)
 gpio_write(PWMA, gpio_OUTPUT)
 gpio_write(PWMA, gpio_LOW)
 -- gpio_mode(PWMA, gpio_INT, gpio_PULLUP)
@@ -39,20 +38,21 @@ function step()
   local now = tmr_now()
   local dif = now - last_step
   dif = ( (dif < 0) and ((dif + 0x7FFFFFFE) + 1) or dif) /1000 -- workaround for #1691
-  if dif < (impulse + delay) then return end
+  if dif < (IMPULSE + DELAY) then return end
 
   -- local pin = state and PIN1 or PIN2
   state = not state
   direction = state and gpio_HIGH or gpio_LOW
   display = (display + 60) % 86400
   print(string_format("display shows %s, signal direction %d (free mem: %d)", display_s(), direction, node.heap()))
-  --gpio_serout(pin, gpio_HIGH, {impulse*1000, delay*1000}, 1, 1)
+  --gpio_serout(pin, gpio_HIGH, {IMPULSE*1000, DELAY*1000}, 1, 1)
   -- gpio_write(pin, gpio_HIGH)
   gpio_write(DIRA, direction)
+  gpio_write(LEDZ, direction)
   -- gpio_write(PWMA, gpio_HIGH)
   pwm_setduty(PWMA, 1023)
-  -- tmr_alarm(tmr_zero, impulse, tmr_ALARM_SINGLE, function() return gpio_write(PWMA, gpio_LOW) end)
-  tmr_alarm(tmr_zero, impulse, tmr_ALARM_SINGLE, function() return pwm_setduty(PWMA, 0) end)
+  -- tmr_alarm(tmr_zero, IMPULSE, tmr_ALARM_SINGLE, function() return gpio_write(PWMA, gpio_LOW) end)
+  tmr_alarm(tmr_zero, IMPULSE, tmr_ALARM_SINGLE, function() return pwm_setduty(PWMA, 0) end)
   last_step = now
 end
 
@@ -67,7 +67,7 @@ function adjust()
     step()
     dif = dif - 1
     if dif > 0 then
-      tmr_alarm(tmr_adjust, impulse + delay, tmr_ALARM_SINGLE, adjust)
+      tmr_alarm(tmr_adjust, IMPULSE + DELAY, tmr_ALARM_SINGLE, adjust)
     end
   end
 end
@@ -86,7 +86,7 @@ end
 timeSync()
 
 srv=net.createServer(net.TCP)
-srv:listen(80,function(conn)
+srv:listen(CLOCK_SERVER,function(conn)
   conn:on("receive", function(client, request)
     local _, _, method, path, vars = string_find(request, "([A-Z]+) (.+)?(.+) HTTP")
     if(method == nil)then

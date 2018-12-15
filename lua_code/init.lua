@@ -1,24 +1,20 @@
 local fn="secclock"
 local smph = "semaphore.tmp"
 
+dofile("config.lua")
+
 local tmr_create, tmr_alarm, tmr_ALARM_SINGLE = tmr.create, tmr.alarm, tmr.ALARM_SINGLE
 
--- 0/3 = direction, digital
--- 5/1 = PWM, analog (0-1023)
-gpio.mode(3, gpio.OUTPUT);
-gpio.write(3, gpio.LOW);
-gpio.mode(1, gpio.OUTPUT);
-gpio.write(1, gpio.LOW);
--- gpio.mode(1, gpio.INT, gpio.PULLUP);
+gpio.mode(DIRA, gpio.OUTPUT);
+gpio.write(DIRA, gpio.LOW);
+gpio.mode(PWMA, gpio.OUTPUT);
+gpio.write(PWMA, gpio.LOW);
 
 local function con(t)
-  local cred = {x="y"}
-  local my_ssid = "kubryk"
-  local my_pass = "kubryk"
   for ssid, _ in pairs(t) do
-    if ssid == my_ssid then
+    if ssid == SSID then
       print("SSID: "..ssid)
-      wifi.sta.config({ssid=my_ssid, pwd=my_pass})
+      wifi.sta.config({ssid=SSID, pwd=PASSWORD})
       wifi.sta.connect()
       return
     end
@@ -45,6 +41,10 @@ tmr_alarm(0,1000,1,function()
         tmr_alarm(0, 1000, 0, function() 
             print("telnet")
             require("telnet")
+            print("helpers")
+            require("helpers")
+            print("leds")
+            require("leds")
             if not file.exists(smph) then
                 file.open(smph, "w"):close()
                 tmr_create():alarm(60000, tmr_ALARM_SINGLE, disarm)

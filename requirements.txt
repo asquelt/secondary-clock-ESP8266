@@ -1,0 +1,1 @@
+NodeMcu should be built against the master branch and include the following modules: color_utils, cron, enduser_setup, file, gpio, net, node, pwm, rtctime, sjson, sntp, tmr, uart, wifi, ws2812, ws2812_effects.

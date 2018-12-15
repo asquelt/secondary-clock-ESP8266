@@ -1,0 +1,20 @@
+-- wifi
+SSID = ""
+PASSWORD = ""
+
+-- pins
+DIRA = 3      -- PIN for changing direction
+PWMA = 1      -- PIN for PWM motor control
+LEDZ = 0      -- PIN for direction indicator LED (don't use 4/GPIO2 - it will collide with WS2812)
+IMPULSE = 250 -- in ms
+DELAY = 10    -- in ms
+
+-- leds
+PIXELS = 16
+PIXELS_START = 1
+PIXELS_END = 16
+PIXELS_STEPS = 5
+
+-- services
+LEDS_SERVER=8080
+CLOCK_SERVER=80
