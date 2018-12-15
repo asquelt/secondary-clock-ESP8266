@@ -1,0 +1,102 @@
+From c3780c6c5cb86a65864d677c8203750e86a0de79 Mon Sep 17 00:00:00 2001
+From: vsky <blue205@centrum.cz>
+Date: Sun, 4 Nov 2018 10:41:42 +0100
+Subject: [PATCH] Daylight saving time perfection (before dst is canceled?)
+
+---
+ lua_code/ntp.lua      | 45 +++++++++++++++++++++----------------------
+ lua_code/secclock.lua |  2 +-
+ 2 files changed, 23 insertions(+), 24 deletions(-)
+
+diff --git a/lua_code/ntp.lua b/lua_code/ntp.lua
+index 356691a..6a669f3 100644
+--- a/lua_code/ntp.lua
++++ b/lua_code/ntp.lua
+@@ -1,19 +1,17 @@
+-local print, string, unpack = print, string, unpack
++local print, unpack = print, unpack
+ local sntp_sync = sntp.sync
+ local rtctime_epoch2cal, rtctime_get = rtctime.epoch2cal, rtctime.get
+ local string_format = string.format
++local TIME_ZONE = 3600
+ 
+ return({
+-    tz=3600,
++    tz=function(self, ts) -- UTC time as parameter
++        return TIME_ZONE + (self:dst(ts + TIME_ZONE) and 3600 or 0)
++    end,
+     
+-    syncdns=function(self, cb, fail)
++    sync=function(self, cb, fail)
+         sntp_sync({"0.pl.pool.ntp.org", "1.pl.pool.ntp.org", "2.pl.pool.ntp.org"},
+             function (ts)
+-                self.tz = 3600 -- CET
+-                if self:dst(ts) then
+-                    self.tz = self.tz + 3600
+-                    print("Daylight saving +1h")
+-                end -- adjust for daylight saving
+                 print("Time updated: "..self:format())
+                 if cb then cb(ts) end
+             end, function ()
+@@ -28,32 +26,33 @@ return({
+     end,
+     
+     time=function(self)
+-        return rtctime_get() + self.tz
++        local t = rtctime_get()
++        return t + self:tz(t)
+     end,
+     
+     format=function(self, ts)
+         if not ts then 
+-            ts=rtctime_get() + self.tz
++            ts=self:time()
+         end
+         local dt=self:ts2gmt(ts)
+-        return string.format("%04u/%01u/%01u %02u:%02u:%02u",unpack(dt))
++        return string_format("%04u/%01u/%01u %02u:%02u:%02u",unpack(dt))
+     end,
+ 
+     dst=function(self, ts)
+-        if not ts then ts=self:time() end
+-        local tm = rtctime_epoch2cal(ts)
+-        local dt = {tm["year"], tm["mon"], tm["day"], tm["hour"], tm["min"], tm["sec"]}
+-        
+-        local dow = (tm["wday"]+6) % 7
+-        print("day of week: "..dow)
++      if not ts then ts=self:time() end
++      local tm = rtctime_epoch2cal(ts)
++      local dt = {tm["year"], tm["mon"], tm["day"], tm["hour"], tm["min"], tm["sec"]}
++      
++      local dow = (tm["wday"]+6) % 7
++      --print("day of week: "..dow)
+ 
+-        local pS = dt[3] - dow --previousSunday 
+-        --print("previous sunday: "..pS)
++      local pS = dt[3] - dow --previousSunday 
++      --print("previous sunday: "..pS)
+ 
+-        if (dt[2] < 3 or dt[2] > 10) then return false end
+-        if (dt[2] > 3 and dt[2] < 10) then return true end
++      if (dt[2] < 3 or dt[2] > 10) then return false end
++      if (dt[2] > 3 and dt[2] < 10) then return true end
+ 
+-        if (dt[2] == 3) then return pS>=25 end
+-        if (dt[2] == 10) then return pS<25 end
++      if (dt[2] == 3) then return pS>=25 and (not(pS>=25 and dow==0) or ts%86400 >= 7200) end
++      if (dt[2] == 10) then return pS<25 or ((pS>=25 and dow==0) and ts%86400 < 7200) end
+     end
+ })
+diff --git a/lua_code/secclock.lua b/lua_code/secclock.lua
+index 0f90be3..fc75599 100644
+--- a/lua_code/secclock.lua
++++ b/lua_code/secclock.lua
+@@ -62,7 +62,7 @@ end
+ 
+ local cronent
+ function timeSync()
+-    n:syncdns(function ()
++    n:sync(function ()
+       if not display then display = ((n:time() % 86400) / 60) * 60 end
+       if not cronent then cronent = cron.schedule("* * * * *", adjust) end
+       return tmr_alarm(tmr_sync, 90*60*1000, tmr_ALARM_AUTO, timeSync) 

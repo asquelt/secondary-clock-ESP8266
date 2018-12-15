@@ -1,17 +1,19 @@
-local print, unpack = print, unpack
+local print, string, unpack = print, string, unpack
 local sntp_sync = sntp.sync
 local rtctime_epoch2cal, rtctime_get = rtctime.epoch2cal, rtctime.get
 local string_format = string.format
-local TIME_ZONE = 3600
 
 return({
-    tz=function(self, ts) -- UTC time as parameter
-        return TIME_ZONE + (self:dst(ts + TIME_ZONE) and 3600 or 0)
-    end,
+    tz=3600,
     
-    sync=function(self, cb, fail)
+    syncdns=function(self, cb, fail)
         sntp_sync({"0.pl.pool.ntp.org", "1.pl.pool.ntp.org", "2.pl.pool.ntp.org"},
             function (ts)
+                self.tz = 3600 -- CET
+                if self:dst(ts) then
+                    self.tz = self.tz + 3600
+                    print("Daylight saving +1h")
+                end -- adjust for daylight saving
                 print("Time updated: "..self:format())
                 if cb then cb(ts) end
             end, function ()
