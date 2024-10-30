@@ -78,3 +78,9 @@ print(file2_read_cache)
 file.remove('config.lua')
 file.rename('config2.lua','config.lua')
 ```
+
+## Unstuck the app
+
+```
+file.remove('semaphore.tmp')
+```
