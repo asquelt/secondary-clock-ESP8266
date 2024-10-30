@@ -50,3 +50,31 @@ A 3d printed [holder](./holder/holder.skp) (designed in SketchUp) and double fac
 ![](./images/secclock-04.jpg )
 
 I have also designed a cap to cover the hole of the original connector ([SketchUp file](./hw/holder/cap.skp) and [STL file](./holder/cap.stl)) - not shown on any of photos.
+
+## Modifying config on the fly
+
+```
+file.open('config.lua')
+file_read_cache=file.read()
+file.close()
+print(file_read_cache)
+
+file_write_cache=file_read_cache:gsub('IMPULSE = 250','IMPULSE = 350')
+print(file_write_cache)
+
+for k,v in pairs(file.list()) do 
+ print("File Name: " .. k .. " Size: " .. v)
+end
+
+file.open("config2.lua", "w")
+file.writeline(file_write_cache) 
+file.close()
+
+file.open('config2.lua')
+file2_read_cache=file.read()
+file.close()
+print(file2_read_cache)
+
+file.remove('config.lua')
+file.rename('config2.lua','config.lua')
+```
